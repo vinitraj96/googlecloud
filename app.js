@@ -35,10 +35,11 @@ const nexmo = new Nexmo({
 });
 
 
-
+var mongodb = require('mongodb');
+var ObjectID = require("bson-objectid");
 var nodemailer = require("nodemailer");
-mongoose.connect('mongodb://vinitraj:vin@ds127854.mlab.com:27854/pipiride');
-//mongoose.connect('mongodb://localhost/OfferApp');
+//mongoose.connect('mongodb://vinitraj:vin@ds127854.mlab.com:27854/pipiride');
+mongoose.connect('mongodb://localhost/OfferApp');
 // Configuration
 app.use(express.static(__dirname + '/uploads'));
 app.use(function(req, res, next) {
@@ -101,6 +102,7 @@ var Offer = new mongoose.Schema({
   country: {type: String,default:'no-value'},
   pincode: {type: String,default:'no-value'},
   paymentOptions: { type: Array, default: [] },
+  ratingsArray: { type: Array, default: [] },
 });
 
 var AddBike = new mongoose.Schema({
@@ -133,6 +135,57 @@ var Coupon = new mongoose.Schema({
   couponCode: String
 });
 
+var Feedback = new mongoose.Schema({
+  feedback: String,
+  mobile_no: String
+});
+
+var CustomerUser = new mongoose.Schema({
+  mobile_no: {type: String,default:'no-value'},
+  otp: {type: String,default:'no-value'},
+  username: {type: String,default:'no-value'},
+  addressArray: { type: Array, default: [] }
+});
+
+var Lead = new mongoose.Schema({
+  mobile_no: {type: String,default:'no-value'},
+  username: {type: String,default:'no-value'},
+  order_id: {type: String,default:'no-value'},
+  order_date: {type: String,default:'no-value'},
+  order_time: {type: String,default:'no-value'},
+  order_address: {type: String,default:'no-value'},
+  pickup_done: {type: String,default:'no-value'},
+  drop_done: {type: String,default:'no-value'},
+  clothsArray: { type: Array, default: [] }
+});
+
+var OrderId = new mongoose.Schema({
+  order_id: {type: String,default:'0'},
+});
+
+var Product = new mongoose.Schema({
+  productName: {type: String,default:'no-value'},
+  activeWheelPriceWashIron: {type: String,default:'no-value'},
+  activeWheelPriceIron: {type: String,default:'no-value'},
+  rinPriceWashIron: {type: String,default:'no-value'},
+  rinPriceIron: {type: String,default:'no-value'},
+  nirmaPriceWashIron: {type: String,default:'no-value'},
+  nirmaPriceIron: {type: String,default:'no-value'},
+  tidePriceWashIron: {type: String,default:'no-value'},
+  tidePriceIron: {type: String,default:'no-value'},
+  surfExcelPriceWashIron: {type: String,default:'no-value'},
+  surfExcelPriceIron: {type: String,default:'no-value'},
+  arielPriceWashIron: {type: String,default:'no-value'},
+  arielPriceIron: {type: String,default:'no-value'},
+  ezeePriceWashIron: {type: String,default:'no-value'},
+  ezeePriceIron: {type: String,default:'no-value'},
+  comfortPrice: {type: String,default:'no-value'},
+  softTouchPrice: {type: String,default:'no-value'},
+  safeWashPrice: {type: String,default:'no-value'},
+  ironingPrice: {type: String,default:'no-value'},
+  dryCleanPrice: {type: String,default:'no-value'}
+});
+
 var ShopUser = mongoose.model('shop_user', ShopUser);
 
 var Offer = mongoose.model('offer', Offer);
@@ -142,6 +195,16 @@ var AddBike = mongoose.model('add_bike', AddBike);
 var Venue = mongoose.model('venue', Venue);
 
 var Coupon = mongoose.model('coupon', Coupon);
+
+var Feedback = mongoose.model('feedback', Feedback);
+
+var Lead = mongoose.model('lead', Lead);
+
+var OrderId = mongoose.model('OrderId', OrderId);
+
+var Product = mongoose.model('Product', Product);
+
+var CustomerUser = mongoose.model('customer_user', CustomerUser);
 
 app.get('/',function(req,res){
   res.sendFile(__dirname +'/index.html');
@@ -491,19 +554,70 @@ app.post('/register',function(req,res){
 
 });
 
+app.post('/customerSignup',function(req,res){
+  console.log("customerSignup");
+  var mobileNo=req.body.mobileNo;
+  var otp = Math.floor(1000 + Math.random() * 9000);
+/*  nexmo.message.sendSms(
+  '919035713685', '917618731317', otp.toString(),
+    (err, responseData) => {
+      if (err) {
+        console.log(err);
+      } else {
+        console.dir(responseData);
+      }
+    }
+ );*/
+  CustomerUser.find({mobile_no:mobileNo},function(err,doc){
+    if(err){
+      console.log('error');
+    }else{
+      if(doc.length===0){
+        console.log('Adding new user');
+        new CustomerUser({
+          mobile_no : mobileNo,
+          otp : otp.toString(),
+        }).save(function(err, doc){
+          if(err) console.log('error');
+          else{
+            //setTimeout(myFunc, 5 * 60 * 1000,mobileNo,otp,res);
+             res.json({"doc":"valid","otp":"otp: "+otp.toString()});
+          }
+        });
+      }else{
+        CustomerUser.update({mobile_no:mobileNo},
+        {
+          $set: {
+           otp : otp.toString()
+          }
+        },function(err,doc){
+          if(err){
+            console.log('error');
+          }else{
+            //setTimeout(myFunc, 5 * 60 * 1000,mobileNo,otp,res);
+
+            res.json({"doc":"valid","otp":"otp: "+otp.toString()});
+          }
+        });
+      }
+    }
+  });
+
+});
+
 app.post('/matchOtp',function(req,res){
   console.log("register");
   var mobileNo=req.body.mobileNo;
   var otp = req.body.otp;
   
-  user.find({$and:[{mobileNo:mobileNo,otp:otp}]},function(err,doc){
+  CustomerUser.find({$and:[{mobile_no:mobileNo,otp:otp}]},function(err,doc){
     if(err){
       console.log('error');
     }else{
       if(doc.length===0){
          res.json({"doc":"not valid"});
       }else{
-        user.update({mobileNo:mobileNo},
+        CustomerUser.update({mobile_no:mobileNo},
         {
           $set: {
            otp : ''
@@ -518,7 +632,6 @@ app.post('/matchOtp',function(req,res){
       }
     }
   });
-
 });
 
 app.post('/deleteOtp',function(req,res){
@@ -528,7 +641,7 @@ app.post('/deleteOtp',function(req,res){
 });
 
 function myFunc(arg,res) {
-  user.update({mobileNo:arg},
+  CustomerUser.update({mobile_no:arg},
     {
       $set: {
        otp : ''
@@ -540,6 +653,90 @@ function myFunc(arg,res) {
       }
     });
 }
+
+app.post('/ratingsAndReview',function(req,res){
+  console.log("ratingsAndReview");
+  var mobile_no=req.body.mobile_no;
+  var review=req.body.review;
+  var ratings=req.body.ratings;
+  var id=req.body.id;
+  console.log("id >>>>>>>>> ");
+  console.log(id);
+  console.log("mobile_no >>>>>>>>> ");
+  console.log(mobile_no);
+  console.log("review >>>>>>>>> ");
+  console.log(review);
+  console.log("ratings >>>>>>>>> ");
+  console.log(ratings);
+  
+  CustomerUser.find({'mobile_no': mobile_no } ,function(err,data){
+    if(err){
+
+    }else{
+        if(data[0].username==undefined||data[0].username==""){
+          res.json({"doc":"invalid"});
+        }else{
+          Offer.update({ '_id': ObjectID(id)},{
+            $push:{
+                ratingsArray : {mobile_no: mobile_no, ratings: ratings, review: review,username:data[0].username}
+              }
+            }, { safe: true },
+          function(err, result1) {
+            if(err){
+              console.log(err);
+              res.json({success: false});
+            }else{
+              res.json({"doc":"valid"});
+            }
+          });
+        }
+    }
+  });
+         
+});
+
+app.post('/UpdateUsernameAndRatingsAndReview',function(req,res){
+  console.log("ratingsAndReview");
+  var mobile_no=req.body.mobile_no;
+  var review=req.body.review;
+  var ratings=req.body.ratings;
+  var id=req.body.id;
+  var username=req.body.username;
+  console.log("id >>>>>>>>> ");
+  console.log(id);
+  console.log("mobile_no >>>>>>>>> ");
+  console.log(mobile_no);
+  console.log("review >>>>>>>>> ");
+  console.log(review);
+  console.log("ratings >>>>>>>>> ");
+  console.log(ratings);
+  
+  CustomerUser.update({mobile_no:mobile_no},
+  {
+    $set: {
+      username:username
+    }
+  },function(err,doc){
+    if(err){
+      console.log('error');
+    }else{
+      
+      Offer.update({ '_id': ObjectID(id)},{
+        $push:{
+            ratingsArray : {mobile_no: mobile_no, ratings: ratings, review: review,username:username}
+          }
+        }, { safe: true },
+      function(err, result1) {
+        if(err){
+          console.log(err);
+          res.json({success: false});
+        }else{
+          res.json({"doc":"valid"});
+        }
+      });
+    }
+  });       
+});
 
 app.post('/CompletePayment',function(req,res){
   console.log("add coupon .....................................");
@@ -1177,6 +1374,404 @@ app.post('/CompleteOrder',function(req,res){
           }
         });
       }
+    }
+  });
+});
+
+app.post('/FetchLeadPickUp',function(req,res){
+  Lead.find({pickup_done:'false'},function(err,data){
+    if(err){
+
+    }else{
+      if(data.length==0){
+         res.json({"doc":"invalid"});
+      }else{
+        res.json({"doc":"valid","data":data});
+      }
+    }
+  });
+});
+
+app.post('/FetchLeadDrop',function(req,res){
+  Lead.find({$and:[{pickup_done:'true'},{drop_done:'false'}]},function(err,data){
+    if(err){
+
+    }else{
+      if(data.length==0){
+         res.json({"doc":"invalid"});
+      }else{
+        res.json({"doc":"valid","data":data});
+      }
+    }
+  });
+});
+
+app.post('/DropCloths',function(req,res){
+  var order_id = req.body.order_id;
+  Lead.update({order_id:order_id},{
+      $set: {
+       drop_done:"true"
+      }
+    },function(err,doc){
+      if(err){
+        console.log('error');
+      }else{
+        res.json({'doc':'valid'});
+      }
+  });
+});
+
+app.post('/FetchLeadPickUpCustomer',function(req,res){
+  console.log("FetchLeadPickUpCustomer");
+  var mobile_no = req.body.mobile_no;
+  Lead.find({$and:[{mobile_no:mobile_no},{drop_done:'true'}]},function(err,data){
+    if(err){
+
+    }else{
+      if(data.length==0){
+         res.json({"doc":"invalid","data":data});
+      }else{
+        res.json({"doc":"valid","data":data});
+      }
+    }
+  });
+});
+
+app.post('/FetchLeadDropCustomer',function(req,res){
+  console.log("FetchLeadDropCustomer");
+  var mobile_no = req.body.mobile_no;
+  Lead.find({$and:[{mobile_no:mobile_no},{pickup_done:'false'}]},function(err,data){
+    if(err){
+
+    }else{
+      if(data.length==0){
+         res.json({"doc":"invalid","data":data});
+      }else{
+        res.json({"doc":"valid","data":data});
+      }
+    }
+  });
+});
+
+app.post('/FetchLeadPickupDoneCustomer',function(req,res){
+  console.log("FetchLeadPickupDoneCustomer");
+  var mobile_no = req.body.mobile_no;
+  Lead.find({$and:[{mobile_no:mobile_no},{pickup_done:'true'},{drop_done:'false'}]},function(err,data){
+    if(err){
+
+    }else{
+      if(data.length==0){
+         res.json({"doc":"invalid","data":data});
+      }else{
+        res.json({"doc":"valid","data":data});
+      }
+    }
+  });
+});
+
+
+app.post('/FetchLeadPickUpByOrder',function(req,res){
+  var order_id = req.body.order_id;
+
+  Lead.find({$and:[{order_id:order_id},{pickup_done:'false'}]},function(err,data){
+    if(err){
+
+    }else{
+      if(data.length==0){
+         res.json({"doc":"invalid"});
+      }else{
+        res.json({"doc":"valid","data":data});
+      }
+    }
+  });
+});
+
+app.post('/FetchLeadPickUpByOrderForCustomer',function(req,res){
+  var order_id = req.body.order_id;
+  
+  Lead.find({order_id:order_id},function(err,data){
+    if(err){
+
+    }else{
+      if(data.length==0){
+         res.json({"doc":"invalid"});
+      }else{
+        res.json({"doc":"valid","data":data});
+      }
+    }
+  });
+});
+
+app.post('/addProduct',function(req,res){
+  console.log("addProduct");
+  var productName= req.body.productName;
+  var activeWheelPriceWashIron = req.body.activeWheelPriceWashIron;
+  var activeWheelPriceIron = req.body.activeWheelPriceIron;
+  var rinPriceWashIron = req.body.rinPriceWashIron;
+  var rinPriceIron = req.body.rinPriceIron;
+  var nirmaPriceWashIron = req.body.nirmaPriceWashIron;
+  var nirmaPriceIron = req.body.nirmaPriceIron;
+  var tidePriceWashIron = req.body.tidePriceWashIron;
+  var tidePriceIron = req.body.tidePriceIron;
+  var surfExcelPriceWashIron = req.body.surfExcelPriceWashIron;
+  var surfExcelPriceIron = req.body.surfExcelPriceIron;
+  var arielPriceWashIron = req.body.arielPriceWashIron;
+  var arielPriceIron = req.body.arielPriceIron;
+  var ezeePriceWashIron = req.body.ezeePriceWashIron;
+  var ezeePriceIron = req.body.ezeePriceIron;
+  var comfortPrice = req.body.comfortPrice;
+  var softTouchPrice = req.body.softTouchPrice;
+  var safeWashPrice = req.body.safeWashPrice;
+  var ironingPrice = req.body.ironingPrice;
+  var dryCleanPrice = req.body.dryCleanPrice;
+  
+  Product.find({productName:productName},function(err,data){
+    if(err){
+
+    }else{
+      if(data.length==0){
+        new Product({
+          productName:productName,
+          activeWheelPriceWashIron : activeWheelPriceWashIron,
+          activeWheelPriceIron : activeWheelPriceIron,
+          rinPriceWashIron : rinPriceWashIron,
+          rinPriceIron : rinPriceIron,
+          nirmaPriceWashIron : nirmaPriceWashIron,
+          nirmaPriceIron : nirmaPriceIron,
+          tidePriceWashIron : tidePriceWashIron,
+          tidePriceIron : tidePriceIron,
+          surfExcelPriceWashIron : surfExcelPriceWashIron,
+          surfExcelPriceIron : surfExcelPriceIron,
+          arielPriceWashIron : arielPriceWashIron,
+          arielPriceIron : arielPriceIron,
+          ezeePriceWashIron : ezeePriceWashIron,
+          ezeePriceIron : ezeePriceIron,
+          comfortPrice : comfortPrice,
+          softTouchPrice : softTouchPrice,
+          safeWashPrice : safeWashPrice,
+          ironingPrice : ironingPrice,
+          dryCleanPrice : dryCleanPrice
+        }).save(function(err, doc){
+          if(err) console.log('error');
+          else{
+            res.json({"doc": "valid"});
+          }
+        });
+      }else{
+        res.json({"doc":"invalid"});
+      }
+    }
+  });
+});
+
+app.post('/fetchProduct',function(req,res){
+  console.log("fetchProduct");
+  Product.find({},function(err,data){
+    if(err){
+
+    }else{
+      res.json({"doc": "valid","data":data});
+    }
+  });
+});
+
+app.post('/fetchCloths',function(req,res){
+  console.log("fetchCloths");
+  var order_id = req.body.order_id;
+  Lead.find({order_id:order_id},function(err,data){
+    if(err){
+
+    }else{
+      res.json({"doc": "valid","data":data});
+    }
+  });
+});
+
+app.post('/pickUpCompleted',function(req,res){
+  console.log("pickUpCompleted");
+  var order_id = req.body.order_id;
+  Lead.update({order_id:order_id},{
+      $set: {
+       pickup_done:"true"
+      }
+    },function(err,doc){
+      if(err){
+        console.log('error');
+      }else{
+        res.json({'doc':'valid'});
+      }
+  });
+});
+
+app.post('/addCloths',function(req,res){
+  console.log("addCloths");
+  var order_id = req.body.order_id;
+  var clothType = req.body.clothType;
+  var processType = req.body.processType;
+  var surfType = req.body.surfType;
+  var softnerNeed = req.body.softnerNeed;
+  var softnerType = req.body.softnerType;
+  var price = req.body.price;
+  
+  console.log(order_id);
+  console.log(clothType);
+  console.log(processType);
+  console.log(surfType);
+  console.log(softnerNeed);
+  console.log(softnerType);
+
+  Lead.update({ 'order_id': order_id},{
+    $push:{
+        clothsArray : {clothType: clothType, processType: processType, surfType: surfType,softnerNeed:softnerNeed,softnerType:softnerType,price:price}
+      }
+    }, { safe: true },
+  function(err, result1) {
+    if(err){
+      console.log(err);
+      res.json({success: false});
+    }else{
+      res.json({"doc":"valid"});
+    }
+  });
+});
+
+app.post('/AddLead',function(req,res){
+  console.log("AddLead");
+  var mobile_email = req.body.mobile_email;
+  var order_date= req.body.order_date;
+  var order_time = req.body.order_time;
+  var order_address = req.body.order_address;
+ 
+  console.log(mobile_email);
+  Lead.find({$and:[{mobile_no:mobile_email},{pickup_done:'false'}]},function(err,data){
+    if(err){
+
+    }else{
+      if(data.length==0){
+        OrderId.find({},function(err,orderId){
+          if(err){
+
+          }else{
+            if(orderId.length==0){
+              var orderId = '1';  
+              new Lead({
+                    mobile_no: mobile_email,
+                    order_id: orderId,
+                    order_date: order_date,
+                    order_time: order_time,
+                    order_address: order_address,
+                    pickup_done: 'false',
+                    drop_done: 'false'
+              }).save(function(err, doc){
+                if(err) console.log('error');
+                else{
+                  new OrderId({
+                        order_id: orderId
+                  }).save(function(err, doc){
+                    if(err) console.log('error');
+                    else{
+                      //setTimeout(myFunc, 5 * 60 * 1000,mobileNo,otp,res);
+                      res.json({'doc':'valid'});
+                    }
+                  });
+                  //setTimeout(myFunc, 5 * 60 * 1000,mobileNo,otp,res);
+                }
+              });
+            }else{
+              console.log("Order Id");
+              console.log(orderId[0].order_id);
+              var orderId = parseInt(orderId[0].order_id) +1;
+              new Lead({
+                    mobile_no: mobile_email,
+                    order_id: orderId,
+                    order_date: order_date,
+                    order_time: order_time,
+                    order_address: order_address,
+                    pickup_done: 'false',
+                    drop_done: 'false'
+              }).save(function(err, doc){
+                if(err) console.log('error');
+                else{
+                  OrderId.update({},{
+                      $set: {
+                       order_id:orderId
+                      }
+                    },function(err,doc){
+                      if(err){
+                        console.log('error');
+                      }else{
+                        res.json({'doc':'valid'});
+                      }
+                  });
+                  //setTimeout(myFunc, 5 * 60 * 1000,mobileNo,otp,res);
+                 
+                }
+              });
+            }
+            
+          }
+        });
+      }else{
+          res.json({'doc':'invalid'});
+        }
+    }
+  });
+});
+
+app.post('/fetchUser',function(req,res){
+  var mobile_email = req.body.mobile_no;
+  
+  CustomerUser.find({mobile_no:mobile_email},function(err,data){
+    if(err){
+
+    }else{
+      res.json({"doc":data[0]});
+    }
+  });
+});
+
+app.post('/sendFeedBack',function(req,res){
+  var mobile_email = req.body.mobileNo;
+  var feedback = req.body.feedback;
+                      
+  new Feedback({
+    mobile_no : mobile_email,
+    feedback : feedback,
+  }).save(function(err, doc){
+    if(err) console.log('error');
+    else{
+      //setTimeout(myFunc, 5 * 60 * 1000,mobileNo,otp,res);
+      res.json({"doc":"valid"});
+    }
+  });
+});
+
+
+
+app.post('/addLocation',function(req,res){
+  console.log("addLocation >>>>>>>>>>>>>>>> ");
+  var mobile_email = req.body.mobile_no;
+  var buildingOrFlat = req.body.buildingOrFlat;
+  var subArea = req.body.subArea;
+  var area = req.body.area;
+  var pinCode = req.body.pinCode;
+  
+  console.log(mobile_email);
+  console.log(subArea);
+  console.log(area);
+  console.log(pinCode);
+
+  CustomerUser.update({ 'mobile_no': mobile_email},{
+    $push:{
+        addressArray : {buildingOrFlat: buildingOrFlat, subArea: subArea, area: area,pinCode:pinCode}
+      }
+    }, { safe: true },
+  function(err, result1) {
+    if(err){
+      console.log(err);
+      res.json({success: false});
+    }else{
+      res.json({"doc":"valid"});
     }
   });
 });
