@@ -207,7 +207,7 @@ var Product = mongoose.model('Product', Product);
 var CustomerUser = mongoose.model('customer_user', CustomerUser);
 
 app.get('/',function(req,res){
-  res.sendFile(__dirname +'/index.html');
+  res.end("hello");
   //res.sendStatus(404);
 });
 
