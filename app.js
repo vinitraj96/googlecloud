@@ -38,8 +38,8 @@ const nexmo = new Nexmo({
 var mongodb = require('mongodb');
 var ObjectID = require("bson-objectid");
 var nodemailer = require("nodemailer");
-//mongoose.connect('mongodb://vinitraj:vin@ds127854.mlab.com:27854/pipiride');
-mongoose.connect('mongodb://localhost/OfferApp');
+mongoose.connect('mongodb://vinitraj:vin@ds123658.mlab.com:23658/offerapp');
+//mongoose.connect('mongodb://localhost/OfferApp');
 // Configuration
 app.use(express.static(__dirname + '/uploads'));
 app.use(function(req, res, next) {
