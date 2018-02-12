@@ -38,7 +38,7 @@ const nexmo = new Nexmo({
 var mongodb = require('mongodb');
 var ObjectID = require("bson-objectid");
 var nodemailer = require("nodemailer");
-mongoose.connect('mongodb://vinit96raj:vn152010@ds123658.mlab.com:23658/offerapp');
+mongoose.connect('mongodb://vinitraj:vin@ds127854.mlab.com:27854/pipiride');
 //mongoose.connect('mongodb://localhost/OfferApp');
 // Configuration
 app.use(express.static(__dirname + '/uploads'));
@@ -555,7 +555,7 @@ app.post('/register',function(req,res){
 });
 
 app.post('/customerSignup',function(req,res){
-  console.log("customerSignup");
+  console.log("customer Signup jklhhhhhh ");
   var mobileNo=req.body.mobileNo;
   var otp = Math.floor(1000 + Math.random() * 9000);
 /*  nexmo.message.sendSms(
