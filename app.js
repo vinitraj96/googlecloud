@@ -1779,7 +1779,7 @@ app.post('/addLocation',function(req,res){
 // Start the server
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
-  console.log(`App listening on port ${PORT}`);
+  console.log(`Hello listening on port ${PORT}`);
   console.log('Press Ctrl+C to quit.');
 });
 // [END app]
